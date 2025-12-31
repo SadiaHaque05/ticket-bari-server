@@ -143,7 +143,7 @@ async function run() {
           image,
           verificationStatus: "pending",
           advertised: false,
-          sold: 0, 
+          sold: 0,
           vendor: {
             name: vendor.name,
             email: vendor.email.toLowerCase(),
@@ -403,7 +403,7 @@ async function run() {
       }
     });
 
-    // Admin toggle 
+    // Admin toggle
     app.put("/admin/tickets/advertise/:id", async (req, res) => {
       try {
         const ticketId = req.params.id;
@@ -421,12 +421,10 @@ async function run() {
             advertised: true,
           });
           if (count >= 6) {
-            return res
-              .status(400)
-              .json({
-                success: false,
-                message: "Cannot advertise more than 6 tickets",
-              });
+            return res.status(400).json({
+              success: false,
+              message: "Cannot advertise more than 6 tickets",
+            });
           }
         }
 
@@ -446,38 +444,57 @@ async function run() {
     });
 
     // Transactions
-app.get("/transactions/user/:email", async (req, res) => {
-  try {
-    const email = req.params.email.toLowerCase();
-    const transactions = await client
-      .db("ticketBariDB")
-      .collection("transactions")
-      .find({ userEmail: email })
-      .sort({ paymentDate: -1 }) // latest first
-      .toArray();
-    res.json(transactions);
-  } catch (error) {
-    console.error("Failed to fetch transactions:", error);
-    res.status(500).json({ message: "Failed to load transactions" });
-  }
-});
+    app.get("/transactions/user/:email", async (req, res) => {
+      try {
+        const email = req.params.email.toLowerCase();
+        const transactions = await client
+          .db("ticketBariDB")
+          .collection("transactions")
+          .find({ userEmail: email })
+          .sort({ paymentDate: -1 }) // latest first
+          .toArray();
+        res.json(transactions);
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+        res.status(500).json({ message: "Failed to load transactions" });
+      }
+    });
 
-// BOOKING 
-app.post("/bookings", async (req, res) => {
-  try {
-    const db = client.db("ticketBariDB");
-    const bookingsCollection = db.collection("bookings");
+    app.get("/tickets/:id", async (req, res) => {
+      try {
+        const ticketId = req.params.id;
+        const ticket = await client
+          .db("ticketBariDB")
+          .collection("tickets")
+          .findOne({ _id: new ObjectId(ticketId) });
 
-    const booking = req.body;
-    await bookingsCollection.insertOne(booking);
+        if (!ticket)
+          return res.status(404).json({ message: "Ticket not found" });
 
-    res.json({ success: true, message: "Booking saved successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Failed to save booking" });
-  }
-});
+        res.json(ticket);
+      } catch (error) {
+        console.error("Failed to fetch ticket:", error);
+        res.status(500).json({ message: "Failed to fetch ticket" });
+      }
+    });
 
+    // BOOKING
+    app.post("/bookings", async (req, res) => {
+      try {
+        const db = client.db("ticketBariDB");
+        const bookingsCollection = db.collection("bookings");
+
+        const booking = req.body;
+        await bookingsCollection.insertOne(booking);
+
+        res.json({ success: true, message: "Booking saved successfully" });
+      } catch (err) {
+        console.error(err);
+        res
+          .status(500)
+          .json({ success: false, message: "Failed to save booking" });
+      }
+    });
 
     app.get("/", (req, res) => {
       res.send("TicketBari Server Running");
