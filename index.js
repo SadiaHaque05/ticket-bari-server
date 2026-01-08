@@ -45,10 +45,9 @@ const client = new MongoClient(uri, {
   },
 });
 
-// Verify
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return next(); // skip if testing without Firebase
+  if (!authHeader) return next();
 
   const token = authHeader.split(" ")[1];
   try {
@@ -104,13 +103,32 @@ async function run() {
     app.get("/users/:email", async (req, res) => {
       try {
         const email = req.params.email.toLowerCase();
-        const user = await usersCollection.findOne({ email });
-        if (!user) return res.status(404).json({ message: "User not found" });
+        let user = await usersCollection.findOne({ email });
 
+        if (!user) {
+          console.log(`User ${email} not found, creating default profile...`);
+
+          let role = "buyer";
+          if (email.startsWith("admin.")) role = "admin";
+          else if (email.startsWith("vendor.")) role = "vendor";
+
+          const defaultUser = {
+            name: email.split("@")[0].replace(".", " "),
+            email,
+            password: "Default@123",
+            role,
+            createdAt: new Date(),
+          };
+
+          const result = await usersCollection.insertOne(defaultUser);
+          user = { ...defaultUser, _id: result.insertedId };
+        }
         res.json({
+          _id: user._id,
           name: user.name,
           email: user.email,
           role: user.role.toLowerCase(),
+          createdAt: user.createdAt,
         });
       } catch (error) {
         console.error(error);
@@ -451,7 +469,7 @@ async function run() {
           .db("ticketBariDB")
           .collection("transactions")
           .find({ userEmail: email })
-          .sort({ paymentDate: -1 }) // latest first
+          .sort({ paymentDate: -1 })
           .toArray();
         res.json(transactions);
       } catch (error) {
@@ -475,6 +493,52 @@ async function run() {
       } catch (error) {
         console.error("Failed to fetch ticket:", error);
         res.status(500).json({ message: "Failed to fetch ticket" });
+      }
+    });
+
+    // Add User
+    app.post("/users", async (req, res) => {
+      try {
+        let { uid, name, email, role, profilePicture } = req.body;
+
+        email = email.toLowerCase();
+        role = role.toLowerCase();
+
+        const existingUser = await usersCollection.findOne({ uid });
+        if (existingUser) return res.send(existingUser);
+
+        if (!profilePicture) {
+          const initials = name
+            ? name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "U"; // fallback initials
+          profilePicture = `https://ui-avatars.com/api/?name=${initials}&background=84CC16&color=fff`;
+        }
+
+        const newUser = {
+          uid,
+          name,
+          email,
+          role,
+          profilePicture, 
+          createdAt: new Date(),
+        };
+
+        await usersCollection.insertOne(newUser);
+
+        res.send({
+          _id: newUser._id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          profilePicture: newUser.profilePicture,
+          createdAt: newUser.createdAt,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to add user" });
       }
     });
 
