@@ -478,6 +478,71 @@ async function run() {
       }
     });
 
+    // Get user by email
+    app.get("/users/:email", async (req, res) => {
+      try {
+        const email = req.params.email.toLowerCase();
+        let user = await usersCollection.findOne({ email });
+
+        if (!user) {
+          console.log(`User ${email} not found, creating default profile...`);
+
+          let role = "buyer";
+          if (email.startsWith("admin.")) role = "admin";
+          else if (email.startsWith("vendor.")) role = "vendor";
+
+          const defaultName = email.split("@")[0].replace(".", " ");
+          const initials = defaultName
+            ? defaultName
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "U";
+
+          const defaultProfilePicture = `https://ui-avatars.com/api/?name=${initials}&background=84CC16&color=fff`;
+
+          const defaultUser = {
+            name: defaultName,
+            email,
+            password: "Default@123",
+            role,
+            profilePicture: defaultProfilePicture,
+            createdAt: new Date(),
+          };
+
+          const result = await usersCollection.insertOne(defaultUser);
+          user = { ...defaultUser, _id: result.insertedId };
+        }
+
+        if (!user.profilePicture) {
+          const initials = user.name
+            ? user.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+            : "U";
+          user.profilePicture = `https://ui-avatars.com/api/?name=${initials}&background=84CC16&color=fff`;
+
+          await usersCollection.updateOne(
+            { _id: new ObjectId(user._id) },
+            { $set: { profilePicture: user.profilePicture } }
+          );
+        }
+
+        res.json({
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role.toLowerCase(),
+          profilePicture: user.profilePicture,
+          createdAt: user.createdAt,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Failed to get user" });
+      }
+    });
+
     app.get("/tickets/:id", async (req, res) => {
       try {
         const ticketId = req.params.id;
@@ -522,7 +587,7 @@ async function run() {
           name,
           email,
           role,
-          profilePicture, 
+          profilePicture,
           createdAt: new Date(),
         };
 
