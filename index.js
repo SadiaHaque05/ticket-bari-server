@@ -478,6 +478,21 @@ async function run() {
       }
     });
 
+    app.get("/bookings/user/:email", async (req, res) => {
+      try {
+        const email = req.params.email.toLowerCase();
+        const bookings = await client
+          .db("ticketBariDB")
+          .collection("bookings")
+          .find({ userEmail: email })
+          .toArray();
+
+        res.json(bookings);
+      } catch (err) {
+        res.status(500).json({ message: "Failed to fetch user bookings" });
+      }
+    });
+
     // BOOKING
     app.post("/bookings", async (req, res) => {
       try {
