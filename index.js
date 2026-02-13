@@ -36,7 +36,7 @@ app.use(
 app.use(express.json());
 
 const uri =
-  "mongodb+srv://ticketBari:1To1GZSZqRIxo11a@cluster0.jj9ycrc.mongodb.net/ticketBariDB?retryWrites=true&w=majority";
+  "mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.jj9ycrc.mongodb.net/ticketBariDB?retryWrites=true&w=majority";
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
