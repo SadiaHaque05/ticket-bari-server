@@ -28,6 +28,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
+      "https://polite-fudge-cb580d.netlify.app",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
@@ -36,7 +37,7 @@ app.use(
 app.use(express.json());
 
 const uri =
-  "mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.jj9ycrc.mongodb.net/ticketBariDB?retryWrites=true&w=majority";
+  `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.jj9ycrc.mongodb.net/ticketBariDB?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -578,7 +579,7 @@ async function run() {
                 .split(" ")
                 .map((n) => n[0])
                 .join("")
-            : "U"; // fallback initials
+            : "U";
           profilePicture = `https://ui-avatars.com/api/?name=${initials}&background=84CC16&color=fff`;
         }
 
