@@ -651,10 +651,8 @@ async function run() {
 
 run().catch(console.dir);
 
-if (process.env.NODE_ENV !== "production") {
   app.listen(port, () => {
     console.log(`Server running on port: ${port}`);
   });
-}
 
-export default app;
+module.exports = app;
