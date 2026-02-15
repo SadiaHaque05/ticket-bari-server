@@ -28,7 +28,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
-      "https://polite-fudge-cb580d.netlify.app",
+      "https://papaya-marshmallow-924379.netlify.app",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
@@ -642,7 +642,7 @@ async function run() {
     });
 
     app.get("/", (req, res) => {
-      res.send("TicketBari Server Running");
+       res.json({ message: "TicketBari Server Running" });
     });
   } catch (err) {
     console.error(err);
@@ -651,6 +651,10 @@ async function run() {
 
 run().catch(console.dir);
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(port, () => {
+    console.log(`Server running on port: ${port}`);
+  });
+}
+
+export default app;
